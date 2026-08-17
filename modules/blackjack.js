@@ -84,11 +84,24 @@ function getGame(userId) {
   return activeBlackjackGames.get(userId);
 }
 
+function hitCard(userId) {
+  const game = activeBlackjackGames.get(userId);
+
+  if (!game) return null;
+
+  game.playerHand.push(
+    game.deck.pop()
+  );
+
+  return game;
+}
+
 module.exports = {
   activeBlackjackGames,
   createDeck,
   getHandValue,
   createGame,
   removeGame,
-  getGame
+  getGame,
+  hitCard
 };
