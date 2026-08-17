@@ -13,7 +13,7 @@ const COMMAND_CHANNEL = '1538606334033928253';
 const DAILY_AMOUNT = 150;
 const DAILY_COOLDOWN = 24 * 60 * 60 * 1000;
 
-const WORK_COOLDOWN = 300000; // 5 minutes
+const WORK_COOLDOWN = 300000;
 const WORK_MIN = 65;
 const WORK_MAX = 165;
 
@@ -39,7 +39,29 @@ const commands = [
 
   new SlashCommandBuilder()
     .setName('work')
-    .setDescription('Work for KLabsBucks')
+    .setDescription('Work for KLabsBucks'),
+
+  new SlashCommandBuilder()
+    .setName('deposit')
+    .setDescription('Deposit money into your bank')
+    .addIntegerOption(option =>
+      option
+        .setName('amount')
+        .setDescription('Amount')
+        .setRequired(true)
+        .setMinValue(1)
+    ),
+
+  new SlashCommandBuilder()
+    .setName('withdraw')
+    .setDescription('Withdraw money from your bank')
+    .addIntegerOption(option =>
+      option
+        .setName('amount')
+        .setDescription('Amount')
+        .setRequired(true)
+        .setMinValue(1)
+    )
 ].map(command => command.toJSON());
 
 async function setupDatabase() {
@@ -55,20 +77,6 @@ async function setupDatabase() {
       last_work BIGINT DEFAULT 0
     );
   `);
-
-  try {
-    await pool.query(`
-      ALTER TABLE users
-      ADD COLUMN IF NOT EXISTS last_daily BIGINT DEFAULT 0
-    `);
-  } catch {}
-
-  try {
-    await pool.query(`
-      ALTER TABLE users
-      ADD COLUMN IF NOT EXISTS last_work BIGINT DEFAULT 0
-    `);
-  } catch {}
 
   console.log('Database ready!');
 }
@@ -159,12 +167,14 @@ Total: ${user.cash + user.bank} KLabsBucks`
   }
 
   if (interaction.commandName === 'daily') {
+
     const user = await getUser(userId);
 
     const now = Date.now();
     const timePassed = now - Number(user.last_daily);
 
     if (timePassed < DAILY_COOLDOWN) {
+
       const remaining = DAILY_COOLDOWN - timePassed;
 
       return interaction.reply({
@@ -200,12 +210,14 @@ ${formatDailyTime(remaining)}`,
   }
 
   if (interaction.commandName === 'work') {
+
     const user = await getUser(userId);
 
     const now = Date.now();
     const timePassed = now - Number(user.last_work);
 
     if (timePassed < WORK_COOLDOWN) {
+
       const remaining = WORK_COOLDOWN - timePassed;
 
       return interaction.reply({
@@ -239,7 +251,76 @@ You can work again in ${formatWorkTime(remaining)}.`,
 💵 You finished working and earned ${earnings} KLabsBucks!`
     });
   }
+
+  if (interaction.commandName === 'deposit') {
+
+    const amount =
+      interaction.options.getInteger('amount');
+
+    const user = await getUser(userId);
+
+    if (amount > user.cash) {
+      return interaction.reply({
+        content:
+`${interaction.user}
+
+❌ You do not have enough cash.`,
+        ephemeral: true
+      });
+    }
+
+    await pool.query(
+      `
+      UPDATE users
+      SET cash = cash - $1,
+          bank = bank + $1
+      WHERE user_id = $2
+      `,
+      [amount, userId]
+    );
+
+    return interaction.reply({
+      content:
+`${interaction.user}
+
+✅ Successfully deposited ${amount} KLabsBucks.`
+    });
+  }
+
+  if (interaction.commandName === 'withdraw') {
+
+    const amount =
+      interaction.options.getInteger('amount');
+
+    const user = await getUser(userId);
+
+    if (amount > user.bank) {
+      return interaction.reply({
+        content:
+`${interaction.user}
+
+❌ You do not have enough money in your bank account.`,
+        ephemeral: true
+      });
+    }
+
+    await pool.query(
+      `
+      UPDATE users
+      SET cash = cash + $1,
+          bank = bank - $1
+      WHERE user_id = $2
+      `,
+      [amount, userId]
+    );
+
+    return interaction.reply({
+      content:
+`${interaction.user}
+
+✅ Successfully withdrew ${amount} KLabsBucks.`
+    });
+  }
 });
 
 client.login(process.env.TOKEN);
-``
