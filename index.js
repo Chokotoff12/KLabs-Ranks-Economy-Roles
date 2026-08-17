@@ -200,18 +200,34 @@ client.on('interactionCreate', async interaction => {
   const userId = interaction.user.id;
 
   if (interaction.commandName === 'balance') {
-    const user = await getUser(userId);
 
-    return interaction.reply({
-      content:
+  const user = await getUser(userId);
+
+  const ranks = await pool.query(`
+    SELECT
+      user_id,
+      (cash + bank) AS wealth
+    FROM users
+    ORDER BY wealth DESC
+  `);
+
+  const position =
+    ranks.rows.findIndex(
+      row => row.user_id === userId
+    ) + 1;
+
+  return interaction.reply({
+    content:
 `${interaction.user}
 
 💵 Cash: ${user.cash}
 🏦 Bank: ${user.bank}
 
-Total: ${user.cash + user.bank} KLabsBucks`
-    });
-  }
+Total: ${user.cash + user.bank} KLabsBucks
+
+🏆 **Your Position Is #${position}**`
+  });
+}
 
  if (interaction.commandName === 'leaderboard') {
 
