@@ -213,6 +213,47 @@ Total: ${user.cash + user.bank} KLabsBucks`
     });
   }
 
+ if (interaction.commandName === 'leaderboard') {
+
+  const leaderboard = await pool.query(`
+    SELECT
+      user_id,
+      (cash + bank) AS wealth
+    FROM users
+    ORDER BY wealth DESC
+    LIMIT 10
+  `);
+
+  let text =
+`🏆 KLabs Richest Players
+
+`;
+
+  for (let i = 0; i < leaderboard.rows.length; i++) {
+
+    const row = leaderboard.rows[i];
+
+    let username = 'Unknown User';
+
+    try {
+      const discordUser =
+        await client.users.fetch(row.user_id);
+
+      username = discordUser.username;
+    } catch {}
+
+    text +=
+`#${i + 1} ${username}
+💵 ${row.wealth} KLabsBucks
+
+`;
+  }
+
+  return interaction.reply({
+    content: text
+  });
+} 
+  
   if (interaction.commandName === 'daily') {
 
     const user = await getUser(userId);
