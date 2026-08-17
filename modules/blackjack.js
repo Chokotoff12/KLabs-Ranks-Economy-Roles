@@ -50,8 +50,45 @@ function getHandValue(hand) {
   return total;
 }
 
+function createGame(userId, bet) {
+  const deck = createDeck();
+
+  const playerHand = [
+    deck.pop(),
+    deck.pop()
+  ];
+
+  const dealerHand = [
+    deck.pop(),
+    deck.pop()
+  ];
+
+  const game = {
+    userId,
+    bet,
+    deck,
+    playerHand,
+    dealerHand
+  };
+
+  activeBlackjackGames.set(userId, game);
+
+  return game;
+}
+
+function removeGame(userId) {
+  activeBlackjackGames.delete(userId);
+}
+
+function getGame(userId) {
+  return activeBlackjackGames.get(userId);
+}
+
 module.exports = {
   activeBlackjackGames,
   createDeck,
-  getHandValue
+  getHandValue,
+  createGame,
+  removeGame,
+  getGame
 };
