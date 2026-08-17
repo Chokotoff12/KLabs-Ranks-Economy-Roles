@@ -8,6 +8,13 @@ const {
 
 const { Pool } = require('pg');
 
+const {
+  createGame,
+  getGame,
+  removeGame,
+  getHandValue
+} = require('./modules/blackjack');
+
 const COMMAND_CHANNEL = '1538606334033928253';
 
 const ROB_COOLDOWN = 450000; // 7m30s
@@ -76,7 +83,19 @@ const commands = [
       .setName('user')
       .setDescription('User to rob')
       .setRequired(true)
+  ),
+
+new SlashCommandBuilder()
+  .setName('blackjack')
+  .setDescription('Play blackjack')
+  .addIntegerOption(option =>
+    option
+      .setName('bet')
+      .setDescription('Bet amount')
+      .setRequired(true)
+      .setMinValue(100)
   )
+
   
 ].map(command => command.toJSON());
 
