@@ -15,7 +15,8 @@ const {
   createGame,
   getGame,
   removeGame,
-  getHandValue
+  getHandValue,
+  hitCard
 } = require('./modules/blackjack');
 
 const COMMAND_CHANNEL = '1538606334033928253';
@@ -563,15 +564,59 @@ ephemeral: true
 });
 }
  
-return interaction.reply({
-content:
+const action =
+  interaction.customId.split('_')[1];
+
+if (action === 'hit') {
+
+  const game = hitCard(interaction.user.id);
+
+  const total =
+    getHandValue(game.playerHand);
+
+  if (total > 21) {
+
+    removeGame(interaction.user.id);
+
+    return interaction.update({
+      content:
 `${interaction.user}
- 
-✅ Button system works.
- 
-Hit/Stand logic coming next.`,
-ephemeral: true
-});
+
+💸 Bust!
+
+Your Cards:
+${game.playerHand.join(' ')}
+
+Your Total:
+${total}
+
+Loss:
+${game.bet} KLabsBucks`,
+      components: []
+    });
+  }
+
+  return interaction.update({
+    content:
+`${interaction.user}
+
+🃏 Blackjack Started!
+
+Your Cards:
+${game.playerHand.join(' ')}
+
+Your Total:
+${total}
+
+Dealer Cards:
+${game.dealerHand[0]} ❓
+
+Dealer Total:
+${getHandValue([game.dealerHand[0]])}`,
+    components: interaction.message.components
+  });
+}
+
 }  
 
 });
