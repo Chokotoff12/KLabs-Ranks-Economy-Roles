@@ -10,6 +10,11 @@ const { Pool } = require('pg');
 
 const COMMAND_CHANNEL = '1538606334033928253';
 
+const ROB_COOLDOWN = 450000; // 7m30s
+const ROB_PERCENTAGE = 0.35;
+const ROB_FAIL_CHANCE = 0.15;
+const ROB_FINE = 2000;
+
 const DAILY_AMOUNT = 150;
 const DAILY_COOLDOWN = 24 * 60 * 60 * 1000;
 
@@ -61,7 +66,18 @@ const commands = [
         .setDescription('Amount')
         .setRequired(true)
         .setMinValue(1)
-    )
+    ),
+
+  new SlashCommandBuilder()
+  .setName('rob')
+  .setDescription('Rob another user')
+  .addUserOption(option =>
+    option
+      .setName('user')
+      .setDescription('User to rob')
+      .setRequired(true)
+  )
+  
 ].map(command => command.toJSON());
 
 async function setupDatabase() {
@@ -74,7 +90,8 @@ async function setupDatabase() {
       level INTEGER DEFAULT 1,
       messages INTEGER DEFAULT 0,
       last_daily BIGINT DEFAULT 0,
-      last_work BIGINT DEFAULT 0
+      last_work BIGINT DEFAULT 0,
+      last_rob BIGINT DEFAULT 0
     );
   `);
 
@@ -209,6 +226,117 @@ ${formatDailyTime(remaining)}`,
     });
   }
 
+ if (interaction.commandName === 'rob') {
+
+  const target =
+    interaction.options.getUser('user');
+
+  if (target.id === interaction.user.id) {
+    return interaction.reply({
+      content:
+`${interaction.user}
+
+❌ You cannot rob yourself.`,
+      ephemeral: true
+    });
+  }
+
+  const robber = await getUser(userId);
+
+  const now = Date.now();
+  const timePassed = now - Number(robber.last_rob);
+
+  if (timePassed < ROB_COOLDOWN) {
+
+    const remaining = ROB_COOLDOWN - timePassed;
+
+    const minutes = Math.floor(remaining / 60000);
+    const seconds = Math.floor((remaining % 60000) / 1000);
+
+    return interaction.reply({
+      content:
+`${interaction.user}
+
+⏳ **The police are still watching you!**
+
+You can rob again in ${minutes}m ${seconds}s.`,
+      ephemeral: true
+    });
+  }
+
+  const victim = await getUser(target.id);
+
+  if (victim.cash <= 0) {
+    return interaction.reply({
+      content:
+`${interaction.user}
+
+❌ This user has no cash available to steal.`,
+      ephemeral: true
+    });
+  }
+
+  const failed =
+    Math.random() < ROB_FAIL_CHANCE;
+
+  if (failed) {
+
+    await pool.query(
+      `
+      UPDATE users
+      SET cash = GREATEST(cash - $1, 0),
+          last_rob = $2
+      WHERE user_id = $3
+      `,
+      [ROB_FINE, now, userId]
+    );
+
+    return interaction.reply({
+      content:
+`${interaction.user}
+
+🚔 You got caught!
+
+Fine:
+${ROB_FINE} KLabsBucks`
+    });
+  }
+
+  const stolenAmount =
+    Math.max(
+      1,
+      Math.floor(victim.cash * ROB_PERCENTAGE)
+    );
+
+  await pool.query(
+    `
+    UPDATE users
+    SET cash = cash - $1
+    WHERE user_id = $2
+    `,
+    [stolenAmount, target.id]
+  );
+
+  await pool.query(
+    `
+    UPDATE users
+    SET cash = cash + $1,
+        last_rob = $2
+    WHERE user_id = $3
+    `,
+    [stolenAmount, now, userId]
+  );
+
+  return interaction.reply({
+    content:
+`${interaction.user}
+
+💵 Successful robbery!
+
+You stole ${stolenAmount} KLabsBucks.`
+  });
+}
+  
   if (interaction.commandName === 'work') {
 
     const user = await getUser(userId);
