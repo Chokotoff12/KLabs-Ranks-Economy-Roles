@@ -9,8 +9,13 @@ const {
 const { Pool } = require('pg');
 
 const COMMAND_CHANNEL = '1538606334033928253';
+
 const DAILY_AMOUNT = 150;
 const DAILY_COOLDOWN = 24 * 60 * 60 * 1000;
+
+const WORK_COOLDOWN = 150000;
+const WORK_MIN = 65;
+const WORK_MAX = 165;
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
@@ -30,7 +35,11 @@ const commands = [
 
   new SlashCommandBuilder()
     .setName('daily')
-    .setDescription('Claim your daily reward')
+    .setDescription('Claim your daily reward'),
+
+  new SlashCommandBuilder()
+    .setName('work')
+    .setDescription('Work for KLabsBucks')
 ].map(command => command.toJSON());
 
 async function setupDatabase() {
@@ -42,7 +51,8 @@ async function setupDatabase() {
       xp INTEGER DEFAULT 0,
       level INTEGER DEFAULT 1,
       messages INTEGER DEFAULT 0,
-      last_daily BIGINT DEFAULT 0
+      last_daily BIGINT DEFAULT 0,
+      last_work BIGINT DEFAULT 0
     );
   `);
 
@@ -51,7 +61,14 @@ async function setupDatabase() {
       ALTER TABLE users
       ADD COLUMN IF NOT EXISTS last_daily BIGINT DEFAULT 0
     `);
-  } catch (err) {}
+  } catch {}
+
+  try {
+    await pool.query(`
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS last_work BIGINT DEFAULT 0
+    `);
+  } catch {}
 
   console.log('Database ready!');
 }
@@ -77,13 +94,20 @@ async function getUser(userId) {
   return result.rows[0];
 }
 
-function formatTime(ms) {
+function formatDailyTime(ms) {
   const totalSeconds = Math.floor(ms / 1000);
 
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
 
   return `${hours}h ${minutes}m`;
+}
+
+function formatWorkTime(ms) {
+  const minutes = Math.floor(ms / 60000);
+  const seconds = Math.floor((ms % 60000) / 1000);
+
+  return `${minutes}m ${seconds}s`;
 }
 
 client.once('clientReady', async () => {
@@ -146,7 +170,7 @@ Total: ${user.cash + user.bank} KLabsBucks`
 `⏳ **You have already claimed your daily reward!**
 
 Come back in:
-${formatTime(remaining)}`,
+${formatDailyTime(remaining)}`,
         ephemeral: true
       });
     }
@@ -166,6 +190,43 @@ ${formatTime(remaining)}`,
 `💵 Daily reward claimed!
 
 +${DAILY_AMOUNT} KLabsBucks`
+    });
+  }
+
+  if (interaction.commandName === 'work') {
+    const user = await getUser(userId);
+
+    const now = Date.now();
+    const timePassed = now - Number(user.last_work);
+
+    if (timePassed < WORK_COOLDOWN) {
+      const remaining = WORK_COOLDOWN - timePassed;
+
+      return interaction.reply({
+        content:
+`⏳ **It's not good to overwork yourself!**
+
+You can work again in ${formatWorkTime(remaining)}.`,
+        ephemeral: true
+      });
+    }
+
+    const earnings =
+      Math.floor(Math.random() * (WORK_MAX - WORK_MIN + 1)) + WORK_MIN;
+
+    await pool.query(
+      `
+      UPDATE users
+      SET cash = cash + $1,
+          last_work = $2
+      WHERE user_id = $3
+      `,
+      [earnings, now, userId]
+    );
+
+    return interaction.reply({
+      content:
+`💵 You finished working and earned ${earnings} KLabsBucks!`
     });
   }
 });
