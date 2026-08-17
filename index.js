@@ -235,12 +235,15 @@ Total: ${user.cash + user.bank} KLabsBucks`
 
     let username = 'Unknown User';
 
-    try {
-      const discordUser =
-        await client.users.fetch(row.user_id);
+try {
 
-      username = discordUser.username;
-    } catch {}
+  const member =
+    await interaction.guild.members.fetch(row.user_id);
+
+  username =
+    member.displayName;
+
+} catch {}
 
     text +=
 `#${i + 1} ${username}
