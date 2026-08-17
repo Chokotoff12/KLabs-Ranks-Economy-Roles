@@ -103,7 +103,6 @@ new SlashCommandBuilder()
   new SlashCommandBuilder()
   .setName('leaderboard')
   .setDescription('View the richest players')
-  )
 
   
 ].map(command => command.toJSON());
