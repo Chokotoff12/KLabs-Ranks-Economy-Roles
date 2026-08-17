@@ -738,6 +738,67 @@ ${game.bet} KLabsBucks`,
     components: []
   });
 }
+
+if (interaction.commandName === 'leaderboard') {
+
+  const leaderboard = await pool.query(`
+    SELECT user_id,
+           cash,
+           bank,
+           (cash + bank) AS wealth
+    FROM users
+    ORDER BY wealth DESC
+    LIMIT 10
+  `);
+
+  const allRanks = await pool.query(`
+    SELECT user_id,
+           (cash + bank) AS wealth
+    FROM users
+    ORDER BY wealth DESC
+  `);
+
+  const position =
+    allRanks.rows.findIndex(
+      row => row.user_id === userId
+    ) + 1;
+
+  let text =
+`🏆 KLabs Richest Players
+
+`;
+
+  for (let i = 0; i < leaderboard.rows.length; i++) {
+
+    const row = leaderboard.rows[i];
+
+    let username;
+
+    try {
+      const member =
+        await client.users.fetch(row.user_id);
+
+      username = member.username;
+    } catch {
+      username = 'Unknown User';
+    }
+
+    text +=
+`#${i + 1} ${username}
+💵 ${row.wealth} KLabsBucks
+
+`;
+  }
+
+  text +=
+`━━━━━━━━━━━━
+
+🏆 **Your Position Is #${position}**`;
+
+  return interaction.reply({
+    content: text
+  });
+}  
 }
   
 });
