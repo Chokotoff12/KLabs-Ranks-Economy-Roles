@@ -13,7 +13,7 @@ const COMMAND_CHANNEL = '1538606334033928253';
 const DAILY_AMOUNT = 150;
 const DAILY_COOLDOWN = 24 * 60 * 60 * 1000;
 
-const WORK_COOLDOWN = 300000;
+const WORK_COOLDOWN = 300000; // 5 minutes
 const WORK_MIN = 65;
 const WORK_MAX = 165;
 
@@ -137,7 +137,7 @@ client.on('interactionCreate', async interaction => {
 
   if (interaction.channelId !== COMMAND_CHANNEL) {
     return interaction.reply({
-      content: '❌ Use economy commands in #commands.',
+      content: `${interaction.user}\n\n❌ Use economy commands in #commands.`,
       ephemeral: true
     });
   }
@@ -149,7 +149,9 @@ client.on('interactionCreate', async interaction => {
 
     return interaction.reply({
       content:
-`💵 Cash: ${user.cash}
+`${interaction.user}
+
+💵 Cash: ${user.cash}
 🏦 Bank: ${user.bank}
 
 Total: ${user.cash + user.bank} KLabsBucks`
@@ -167,7 +169,9 @@ Total: ${user.cash + user.bank} KLabsBucks`
 
       return interaction.reply({
         content:
-`⏳ **You have already claimed your daily reward!**
+`${interaction.user}
+
+⏳ **You have already claimed your daily reward!**
 
 Come back in:
 ${formatDailyTime(remaining)}`,
@@ -187,7 +191,9 @@ ${formatDailyTime(remaining)}`,
 
     return interaction.reply({
       content:
-`💵 Daily reward claimed!
+`${interaction.user}
+
+💵 Daily reward claimed!
 
 +${DAILY_AMOUNT} KLabsBucks`
     });
@@ -204,7 +210,9 @@ ${formatDailyTime(remaining)}`,
 
       return interaction.reply({
         content:
-`⏳ **It's not good to overwork yourself!**
+`${interaction.user}
+
+⏳ **It's not good to overwork yourself!**
 
 You can work again in ${formatWorkTime(remaining)}.`,
         ephemeral: true
@@ -226,9 +234,12 @@ You can work again in ${formatWorkTime(remaining)}.`,
 
     return interaction.reply({
       content:
-`💵 You finished working and earned ${earnings} KLabsBucks!`
+`${interaction.user}
+
+💵 You finished working and earned ${earnings} KLabsBucks!`
     });
   }
 });
 
 client.login(process.env.TOKEN);
+``
