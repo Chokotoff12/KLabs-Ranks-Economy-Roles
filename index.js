@@ -741,6 +741,7 @@ Loss:
 ${game.bet} KLabsBucks`,
     components: []
   });
+}
 
 if (interaction.commandName === 'leaderboard') {
 
@@ -802,7 +803,6 @@ if (interaction.commandName === 'leaderboard') {
     content: text
   });
 }  
-}
   
 });
 
