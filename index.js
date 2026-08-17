@@ -433,23 +433,42 @@ You can work again in ${formatWorkTime(remaining)}.`,
 ✅ Successfully deposited ${amount} KLabsBucks.`
     });
   }
+if (interaction.commandName === 'withdraw') {
 
-  if (interaction.commandName === 'withdraw') {
+  const amount =
+    interaction.options.getInteger('amount');
 
-    const amount =
-      interaction.options.getInteger('amount');
+  const user = await getUser(userId);
 
-    const user = await getUser(userId);
-
-    if (amount > user.bank) {
-      return interaction.reply({
-        content:
+  if (amount > user.bank) {
+    return interaction.reply({
+      content:
 `${interaction.user}
 
 ❌ You do not have enough money in your bank account.`,
-        ephemeral: true
-     
-          if (interaction.commandName === 'blackjack') {
+      ephemeral: true
+    });
+  }
+
+  await pool.query(
+    `
+    UPDATE users
+    SET cash = cash + $1,
+        bank = bank - $1
+    WHERE user_id = $2
+    `,
+    [amount, userId]
+  );
+
+  return interaction.reply({
+    content:
+`${interaction.user}
+
+✅ Successfully withdrew ${amount} KLabsBucks.`
+  });
+}
+
+if (interaction.commandName === 'blackjack') {
 
   const bet =
     interaction.options.getInteger('bet');
@@ -512,27 +531,7 @@ Dealer Total:
 ${dealerTotal}
 
 ⚠️ Hit and Stand buttons coming next.`
-  });
-}
-      
-      });
-    }
-
-    await pool.query(
-      `
-      UPDATE users
-      SET cash = cash + $1,
-          bank = bank - $1
-      WHERE user_id = $2
-      `,
-      [amount, userId]
-    );
-
-    return interaction.reply({
-      content:
-`${interaction.user}
-
-✅ Successfully withdrew ${amount} KLabsBucks.`
+    
     });
   }
 });
