@@ -563,8 +563,7 @@ content:
 ephemeral: true
 });
 }
- 
-const action =
+ const action =
   interaction.customId.split('_')[1];
 
 if (action === 'hit') {
@@ -617,8 +616,130 @@ ${getHandValue([game.dealerHand[0]])}`,
   });
 }
 
-}  
+if (action === 'stand') {
 
+  const game =
+    getGame(interaction.user.id);
+
+  if (!game) {
+    return interaction.reply({
+      content:
+'❌ Blackjack game not found.',
+      ephemeral: true
+    });
+  }
+
+  while (
+    getHandValue(game.dealerHand) < 17
+  ) {
+    game.dealerHand.push(
+      game.deck.pop()
+    );
+  }
+
+  const playerTotal =
+    getHandValue(game.playerHand);
+
+  const dealerTotal =
+    getHandValue(game.dealerHand);
+
+  removeGame(interaction.user.id);
+
+  if (
+    dealerTotal > 21 ||
+    playerTotal > dealerTotal
+  ) {
+
+    await pool.query(
+      `
+      UPDATE users
+      SET cash = cash + $1
+      WHERE user_id = $2
+      `,
+      [game.bet * 2, interaction.user.id]
+    );
+
+    return interaction.update({
+      content:
+`${interaction.user}
+
+💵 You won!
+
+Your Cards:
+${game.playerHand.join(' ')}
+
+Your Total:
+${playerTotal}
+
+Dealer Cards:
+${game.dealerHand.join(' ')}
+
+Dealer Total:
+${dealerTotal}
+
+Profit:
+${game.bet} KLabsBucks`,
+      components: []
+    });
+  }
+
+  if (playerTotal === dealerTotal) {
+
+    await pool.query(
+      `
+      UPDATE users
+      SET cash = cash + $1
+      WHERE user_id = $2
+      `,
+      [game.bet, interaction.user.id]
+    );
+
+    return interaction.update({
+      content:
+`${interaction.user}
+
+🤝 Push!
+
+Your Cards:
+${game.playerHand.join(' ')}
+
+Your Total:
+${playerTotal}
+
+Dealer Cards:
+${game.dealerHand.join(' ')}
+
+Dealer Total:
+${dealerTotal}`,
+      components: []
+    });
+  }
+
+  return interaction.update({
+    content:
+`${interaction.user}
+
+💸 You lost!
+
+Your Cards:
+${game.playerHand.join(' ')}
+
+Your Total:
+${playerTotal}
+
+Dealer Cards:
+${game.dealerHand.join(' ')}
+
+Dealer Total:
+${dealerTotal}
+
+Loss:
+${game.bet} KLabsBucks`,
+    components: []
+  });
+}
+}
+  
 });
 
 client.login(process.env.TOKEN);
