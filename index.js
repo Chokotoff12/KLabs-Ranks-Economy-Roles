@@ -98,6 +98,11 @@ new SlashCommandBuilder()
       .setDescription('Bet amount')
       .setRequired(true)
       .setMinValue(100)
+  ),
+
+  new SlashCommandBuilder()
+  .setName('leaderboard')
+  .setDescription('View the richest players')
   )
 
   
