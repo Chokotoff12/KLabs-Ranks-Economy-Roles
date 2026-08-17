@@ -1,9 +1,12 @@
 const {
-  Client,
-  GatewayIntentBits,
-  REST,
-  Routes,
-  SlashCommandBuilder
+Client,
+GatewayIntentBits,
+REST,
+Routes,
+SlashCommandBuilder,
+ActionRowBuilder,
+ButtonBuilder,
+ButtonStyle
 } = require('discord.js');
 
 const { Pool } = require('pg');
@@ -467,7 +470,6 @@ if (interaction.commandName === 'withdraw') {
 ✅ Successfully withdrew ${amount} KLabsBucks.`
   });
 }
-
 if (interaction.commandName === 'blackjack') {
 
   const bet =
@@ -512,6 +514,19 @@ if (interaction.commandName === 'blackjack') {
   const dealerTotal =
     getHandValue([game.dealerHand[0]]);
 
+  const row = new ActionRowBuilder()
+    .addComponents(
+      new ButtonBuilder()
+        .setCustomId(`bj_hit_${userId}`)
+        .setLabel('Hit')
+        .setStyle(ButtonStyle.Primary),
+
+      new ButtonBuilder()
+        .setCustomId(`bj_stand_${userId}`)
+        .setLabel('Stand')
+        .setStyle(ButtonStyle.Success)
+    );
+
   return interaction.reply({
     content:
 `${interaction.user}
@@ -528,12 +543,34 @@ Dealer Cards:
 ${game.dealerHand[0]} ❓
 
 Dealer Total:
-${dealerTotal}
+${dealerTotal}`,
+    components: [row]
+  });
+}
+if (interaction.isButton()) {
+ 
+const buttonUserId =
+interaction.customId.split('_')[2];
+ 
+if (buttonUserId !== interaction.user.id) {
+return interaction.reply({
+content:
+'❌ You cannot use these buttons because this blackjack game is not yours.',
+ephemeral: true
+});
+}
+ 
+return interaction.reply({
+content:
+`${interaction.user}
+ 
+✅ Button system works.
+ 
+Hit/Stand logic coming next.`,
+ephemeral: true
+});
+}  
 
-⚠️ Hit and Stand buttons coming next.`
-    
-    });
-  }
 });
 
 client.login(process.env.TOKEN);
