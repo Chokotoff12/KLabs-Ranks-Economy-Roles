@@ -180,8 +180,11 @@ client.once('clientReady', async () => {
 });
 
 client.on('interactionCreate', async interaction => {
-  if (!interaction.isChatInputCommand()) return;
-
+ if (
+  !interaction.isChatInputCommand() &&
+  !interaction.isButton()
+) return;
+  
   if (interaction.channelId !== COMMAND_CHANNEL) {
     return interaction.reply({
       content: `${interaction.user}\n\n❌ Use economy commands in #commands.`,
