@@ -268,7 +268,25 @@ try {
 `;
   }
 
-  return interaction.reply({
+  const allRanks = await pool.query(`
+  SELECT
+    user_id,
+    (cash + bank) AS wealth
+  FROM users
+  ORDER BY wealth DESC
+`);
+
+const position =
+  allRanks.rows.findIndex(
+    row => row.user_id === userId
+  ) + 1;
+
+text += `
+━━━━━━━━━━━━
+
+🏆 **Your Position Is #${position}**
+`;
+   return interaction.reply({
     content: text
   });
 } 
