@@ -448,6 +448,73 @@ You can work again in ${formatWorkTime(remaining)}.`,
 
 ❌ You do not have enough money in your bank account.`,
         ephemeral: true
+     
+          if (interaction.commandName === 'blackjack') {
+
+  const bet =
+    interaction.options.getInteger('bet');
+
+  const user = await getUser(userId);
+
+  if (bet > user.cash) {
+    return interaction.reply({
+      content:
+`${interaction.user}
+
+❌ You do not have enough cash for this bet.`,
+      ephemeral: true
+    });
+  }
+
+  if (getGame(userId)) {
+    return interaction.reply({
+      content:
+`${interaction.user}
+
+❌ You already have an active blackjack game.`,
+      ephemeral: true
+    });
+  }
+
+  await pool.query(
+    `
+    UPDATE users
+    SET cash = cash - $1
+    WHERE user_id = $2
+    `,
+    [bet, userId]
+  );
+
+  const game = createGame(userId, bet);
+
+  const playerTotal =
+    getHandValue(game.playerHand);
+
+  const dealerTotal =
+    getHandValue([game.dealerHand[0]]);
+
+  return interaction.reply({
+    content:
+`${interaction.user}
+
+🃏 Blackjack Started!
+
+Your Cards:
+${game.playerHand.join(' ')}
+
+Your Total:
+${playerTotal}
+
+Dealer Cards:
+${game.dealerHand[0]} ❓
+
+Dealer Total:
+${dealerTotal}
+
+⚠️ Hit and Stand buttons coming next.`
+  });
+}
+      
       });
     }
 
