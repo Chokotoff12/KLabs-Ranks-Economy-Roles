@@ -122,6 +122,11 @@ async function setupDatabase() {
     );
   `);
 
+  await pool.query(`
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS last_rob BIGINT DEFAULT 0;
+`);
+
   console.log('Database ready!');
 }
 
@@ -192,7 +197,7 @@ client.on('interactionCreate', async interaction => {
   
   if (interaction.channelId !== COMMAND_CHANNEL) {
     return interaction.reply({
-      content: `${interaction.user}\n\n❌ Use economy commands in #commands.`,
+      content: `${interaction.user}\n\n❌ Use these type of commands in #commands.`,
       ephemeral: true
     });
   }
